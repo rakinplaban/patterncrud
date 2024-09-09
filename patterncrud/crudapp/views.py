@@ -1,13 +1,14 @@
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.template.loader import render_to_string
-
+from django.views.decorators.csrf import csrf_exempt
 from .models import Item
 from .forms import ItemForm
+from django.shortcuts import get_object_or_404
 
 # Create your views here.
 
-def Index(request):
+def index(request):
     
     item_list = Item.objects.all()
     
@@ -29,32 +30,33 @@ def Index(request):
 
 
 def item_create(request):
-    
     data = dict()
 
     if request.method == 'POST':
-        
         form = ItemForm(request.POST, request.FILES)
-        
+
         if form.is_valid():
             form.save()
             
+            # Fetch the updated item list
             item_list = Item.objects.all()
             context = {
                 'item_list': item_list
             }
 
             data['valid'] = True
-            data['success'] = render_to_string('success/create-success.html')
-            data['item_list'] = render_to_string('items/item_list.html', context)
+            data['success'] = render_to_string('success/create-success.html', context)
+            data['item_list'] = render_to_string('item/item_list.html', context)
             return JsonResponse(data)
         
         else:
-            data['html_form'] = render_to_string('items/item_create.html')
+            # Include form errors in the response
+            data['html_form'] = render_to_string('item/item_create.html', {'form': form}, request=request)
             return JsonResponse(data)
 
     else:
-        data['html_form'] = render_to_string('items/item_create.html')
+        # Render the form for the first time
+        data['html_form'] = render_to_string('item/item_create.html', {'form': ItemForm()}, request=request)
         return JsonResponse(data)
 
 
@@ -82,43 +84,31 @@ def item_edit(request, id):
 
             data['valid'] = True
             data['success'] = render_to_string('success/edit-success.html')
-            data['item_list'] = render_to_string('items/item_list.html', context)
+            data['item_list'] = render_to_string('item/item_list.html', context)
             return JsonResponse(data)
         
         else:
-            data['edit_form'] = render_to_string('items/item_edit.html', item_dic)
+            data['edit_form'] = render_to_string('item/item_edit.html', item_dic)
             return JsonResponse(data)
     
     else:
-        data['edit_form'] = render_to_string('items/item_edit.html', item_dic)
+        data['edit_form'] = render_to_string('item/item_edit.html', item_dic)
         return JsonResponse(data)
 
 
 def item_delete(request, id):
-    
     data = dict()
-
-    item = Item.objects.get(id=id)
+    item = get_object_or_404(Item, id=id)  # Use get_object_or_404 for better error handling
     
-    item_dic = {
-        'item': item
-    }
-
     if request.method == 'POST':
-        
         item.delete()
-        
         item_list = Item.objects.all()
-        context = {
-            'item_list': item_list
-        }
-
+        context = {'item_list': item_list}
         data['valid'] = True
         data['success'] = render_to_string('success/delete-success.html')
-        data['item_list'] = render_to_string('items/item_list.html', context)
+        data['item_list'] = render_to_string('item/item_list.html', context)
         return JsonResponse(data)
-    
     else:
-        data['delete_form'] = render_to_string('items/item_delete.html', item_dic)
+        context = {'item': item}
+        data['delete_form'] = render_to_string('item/item_delete.html', context, request=request)
         return JsonResponse(data)
-
