@@ -14,25 +14,24 @@
 </head>
 <body>
     
-    <div class="container"></div>
-        
-        <h4 class="mt-5">Item List</h4>
-
+        <div class="container">
+          <h4 class="mt-5">Item List</h4>
+        </div>
 
         <!-- Modal HTML Structure -->
-<div class="modal fade" id="createItemModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <!-- AJAX form content will be injected here -->
-      </div>
-    </div>
-  </div>
+        <div class="modal fade" id="createItemModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <!-- AJAX form content will be injected here -->
+              </div>
+            </div>
+        </div>
         
 
          <!-- Button trigger modal -->
           
             <!-- Button to open the form (without data-bs-toggle) -->
-        <div id="itemCreate">
+        <div id="itemCreate" class="container">
             <button type="button" class="btn btn-primary item_create_button" data-url="{% url 'create_item' %}">
               Create Item List
             </button>
@@ -43,7 +42,7 @@
            
            </div>
         
-          
+    <div class="container">  
         <table id="itemList" class="table table-success table-striped mt-3">
             <thead>
                 <tr>
