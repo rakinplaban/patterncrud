@@ -1,0 +1,22 @@
+{% for data in item_list %}
+<tr>
+    
+    <td>{{ data.name }}</td>
+    <td>{{ data.description }}</td>
+    <td>
+        <div class="d-flex">
+            
+           
+            <button class="btn btn-sm btn-secondary m-1 edit_item_button"
+            data-url="{% url 'update_item' data.id %}">Edit</button>
+    
+        
+            <button class="btn btn-sm btn-danger m-1 delete_item_button"
+            data-url="{% url 'delete_item' data.id %}">Delete</button>
+        
+           
+        
+        </div>
+    </td>
+</tr>
+{% endfor %}

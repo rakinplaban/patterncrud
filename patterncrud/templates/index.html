@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+    <!-- Include jQuery before your custom scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha384-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <!-- Then Bootstrap Bundle (including Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <title>Document</title>
+</head>
+<body>
+    
+    <div class="container"></div>
+        
+        <h4 class="mt-5">Item List</h4>
+
+
+        <!-- Modal HTML Structure -->
+<div class="modal fade" id="createItemModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <!-- AJAX form content will be injected here -->
+      </div>
+    </div>
+  </div>
+        
+
+         <!-- Button trigger modal -->
+          
+            <!-- Button to open the form (without data-bs-toggle) -->
+        <div id="itemCreate">
+            <button type="button" class="btn btn-primary item_create_button" data-url="{% url 'create_item' %}">
+              Create Item List
+            </button>
+        </div>
+  
+           <div id="successMessage">
+
+           
+           </div>
+        
+          
+        <table id="itemList" class="table table-success table-striped mt-3">
+            <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Description</th>
+                  <th scope="col">Action</th>
+                </tr>
+    
+              </thead>
+              <tbody>
+    
+                {% include 'item/item_list.html' %}
+                
+                
+              </tbody>
+        </table>
+
+    </div>
+
+    <!-- Create item -->
+    <script>
+      $(function() {
+  // Function to get CSRF token from the cookies
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  const csrftoken = getCookie('csrftoken');  // Get the CSRF token from cookies
+
+  // Function to load the form into the modal
+  let loadForm = function() {
+    let button = $(this);  // Button that triggered the event
+    let modal = $('#createItemModal'); // Modal element
+
+    $.ajax({
+      url: button.attr('data-url'),
+      type: 'get',
+      dataType: 'json',
+      beforeSend: function(xhr) {
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);  // Set CSRF token in headers
+        modal.modal('show');  // Show modal before loading content
+      },
+      success: function(data) {
+        modal.find('.modal-content').html(data.html_form);  // Insert form into modal-content
+      },
+      error: function(xhr, errmsg, err) {
+        console.log('Error:', errmsg);
+      }
+    });
+  };
+
+  // Save form with POST request
+  let saveForm = function(e) {
+    e.preventDefault();  // Prevent default form submission
+    let form = $(this);
+    let modal = $('#createItemModal'); // Modal element
+
+    $.ajax({
+      url: form.attr('action'),
+      type: form.attr('method'),
+      data: form.serialize(),
+      beforeSend: function(xhr) {
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);  // Set CSRF token in headers
+      },
+      success: function(data) {
+        if (data.valid) {
+          modal.modal('hide');  // Hide modal on success
+          $('#itemList tbody').html(data.item_list);  // Reload the item list
+          $('#successMessage').html(data.success);  // Optionally show a success message
+        } else {
+          modal.find('.modal-content').html(data.html_form);  // Load the form again if it's invalid
+        }
+      },
+      error: function(xhr, errmsg, err) {
+        console.log('Error:', errmsg);
+      }
+    });
+  };
+
+  // Attach the event to load the form when clicked
+  $('#itemCreate').on('click', '.item_create_button', loadForm);
+
+  // Attach the form submit event
+  $('#createItemModal').on('submit', '.item_create_form', saveForm);
+});
+
+    </script>
+    
+
+<!-- Edit form -->
+<script>
+  $(function() {
+    // Load form data
+    let loadEditForm = function() {
+      let modal = $('#createItemModal');  // Modal element
+      let editButton = $(this);  // Button that triggered the event
+
+      $.ajax({
+        url: editButton.attr('data-url'),
+        type: 'get',
+        dataType: 'json',
+        beforeSend: function() {
+          modal.modal('show');  // Show modal before content is loaded
+        },
+        success: function(data) {
+          modal.find('.modal-content').html(data.edit_form);  // Insert edit form into modal
+        }
+      });
+    };
+
+    // Save form data
+    let saveEditForm = function(e) {
+      e.preventDefault();  // Prevent default form submission
+      let modal = $('#createItemModal');
+      let form = $(this);
+      let formData = new FormData(form[0]);
+
+      $.ajax({
+        url: form.attr('action'),
+        type: form.attr('method'),
+        dataType: 'json',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(data) {
+          if (data.valid) {
+            modal.modal('hide');  // Hide modal on success
+            $('#itemList tbody').html(data.item_list);  // Update table
+            $('#successMessage').html(data.success);  // Show success message
+          } else {
+            modal.find('.modal-content').html(data.edit_form);  // Reload form with errors
+          }
+        }
+      });
+    };
+
+    // Attach event handlers
+    $('#itemList').on('click', '.edit_item_button', loadEditForm);  // Load edit form on button click
+    $('#createItemModal').on('submit', '.item_edit_form', saveEditForm);  // Submit edit form
+  });
+</script>
+
+<!-- Delete form -->
+  <script>
+    $(function() {
+  // Function to get CSRF token from the cookies
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  const csrftoken = getCookie('csrftoken');  // Get the CSRF token from cookies
+
+  // Function to load the delete form into the modal
+  let loadDeleteForm = function() {
+    let modal = $('#createItemModal');
+    let deleteButton = $(this);
+
+    $.ajax({
+      url: deleteButton.attr('data-url'),
+      type: 'get',
+      dataType: 'json',
+      beforeSend: function(xhr) {
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);  // Set CSRF token in headers
+      },
+      success: function(data) {
+        if (data.delete_form) {
+          modal.find('.modal-content').html(data.delete_form);  // Insert delete confirmation form
+          modal.modal('show');  // Show the modal after content is loaded
+        } else {
+          console.error('Delete form not received:', data);
+        }
+      },
+      error: function(xhr, errmsg, err) {
+        console.error('Error loading delete form:', errmsg);
+      }
+    });
+  };
+
+  // Save form data
+  let saveDeleteForm = function(e) {
+    e.preventDefault();  // Prevent default form submission
+    let modal = $('#createItemModal');
+    let form = $(this);
+
+    $.ajax({
+      url: form.attr('action'),
+      type: form.attr('method'),
+      dataType: 'json',
+      data: form.serialize(),
+      beforeSend: function(xhr) {
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);  // Set CSRF token in headers
+      },
+      success: function(data) {
+        if (data.valid) {
+          modal.modal('hide');  // Hide modal on success
+          $('#itemList tbody').html(data.item_list);  // Update table
+          $('#successMessage').html(data.success);  // Show success message
+        } else {
+          modal.find('.modal-content').html(data.delete_form);  // Reload form with errors
+        }
+      },
+      error: function(xhr, errmsg, err) {
+        console.error('Error during form submission:', errmsg);
+      }
+    });
+  };
+
+  // Attach event handlers
+  $('#itemList').on('click', '.delete_item_button', loadDeleteForm);  // Load delete form on button click
+  $('#createItemModal').on('submit', '.item_delete_form', saveDeleteForm);  // Submit delete form
+});
+
+  </script>
+
+</body>
+</html>
