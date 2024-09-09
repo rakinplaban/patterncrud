@@ -145,57 +145,87 @@
     
 
 <!-- Edit form -->
-<script>
-  $(function() {
-    // Load form data
-    let loadEditForm = function() {
-      let modal = $('#createItemModal');  // Modal element
-      let editButton = $(this);  // Button that triggered the event
+  <script>
+    $(function() {
+  // Function to get CSRF token from the cookies
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
 
-      $.ajax({
-        url: editButton.attr('data-url'),
-        type: 'get',
-        dataType: 'json',
-        beforeSend: function() {
-          modal.modal('show');  // Show modal before content is loaded
-        },
-        success: function(data) {
+  const csrftoken = getCookie('csrftoken');  // Get the CSRF token from cookies
+
+  // Function to load the edit form into the modal
+  let loadEditForm = function() {
+    let modal = $('#createItemModal');  // Use your modal's ID
+    let editButton = $(this);
+
+    $.ajax({
+      url: editButton.attr('data-url'),
+      type: 'get',
+      dataType: 'json',
+      beforeSend: function(xhr) {
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);  // Set CSRF token in headers
+      },
+      success: function(data) {
+        if (data.edit_form) {
           modal.find('.modal-content').html(data.edit_form);  // Insert edit form into modal
+          modal.modal('show');  // Show the modal
+        } else {
+          console.error('Edit form not received:', data);
         }
-      });
-    };
+      },
+      error: function(xhr, errmsg, err) {
+        console.error('Error loading edit form:', errmsg);
+      }
+    });
+  };
 
-    // Save form data
-    let saveEditForm = function(e) {
-      e.preventDefault();  // Prevent default form submission
-      let modal = $('#createItemModal');
-      let form = $(this);
-      let formData = new FormData(form[0]);
+  // Save form data after editing
+  let saveEditForm = function(e) {
+    e.preventDefault();  // Prevent default form submission
+    let modal = $('#createItemModal');
+    let form = $(this);
 
-      $.ajax({
-        url: form.attr('action'),
-        type: form.attr('method'),
-        dataType: 'json',
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(data) {
-          if (data.valid) {
-            modal.modal('hide');  // Hide modal on success
-            $('#itemList tbody').html(data.item_list);  // Update table
-            $('#successMessage').html(data.success);  // Show success message
-          } else {
-            modal.find('.modal-content').html(data.edit_form);  // Reload form with errors
-          }
+    $.ajax({
+      url: form.attr('action'),
+      type: form.attr('method'),
+      dataType: 'json',
+      data: form.serialize(),
+      beforeSend: function(xhr) {
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);  // Set CSRF token in headers
+      },
+      success: function(data) {
+        if (data.valid) {
+          modal.modal('hide');  // Hide modal on success
+          $('#itemList tbody').html(data.item_list);  // Update the item list
+          $('#successMessage').html(data.success);  // Show success message
+        } else {
+          modal.find('.modal-content').html(data.edit_form);  // Reload form with errors
         }
-      });
-    };
+      },
+      error: function(xhr, errmsg, err) {
+        console.error('Error during form submission:', errmsg);
+      }
+    });
+  };
 
-    // Attach event handlers
-    $('#itemList').on('click', '.edit_item_button', loadEditForm);  // Load edit form on button click
-    $('#createItemModal').on('submit', '.item_edit_form', saveEditForm);  // Submit edit form
-  });
-</script>
+  // Attach event handlers
+  $('#itemList').on('click', '.edit_item_button', loadEditForm);  // Load edit form on button click
+  $('#createItemModal').on('submit', '.item_edit_form', saveEditForm);  // Submit edit form
+});
+
+  </script>
 
 <!-- Delete form -->
   <script>

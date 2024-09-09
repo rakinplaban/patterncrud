@@ -64,7 +64,7 @@ def item_edit(request, id):
     
     data = dict()
     
-    item = Item.objects.get(id=id)
+    item = get_object_or_404(Item,id=id)
     
     item_dic = {
         'item': item
